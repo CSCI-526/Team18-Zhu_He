@@ -408,6 +408,7 @@ MonoBehaviour:
   leftoverMaterial: {fileID: 2100000, guid: 527896c268b1705428c40e5a561b8aef, type: 2}
   minPieceVolume: 0.25
   leftoversCanRotate: 0
+  leftoversCanBePushed: 0
   lineWidthPixels: 4
 --- !u!114 &425685393
 MonoBehaviour:
@@ -422,8 +423,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LevelManager
   levelTitle: Cut to fit
-  levelHint: The tunnel is too low for a full cube. Press C, drag a horizontal line
-    through the middle of the cube, then keep either half.
+  levelHint: The red door only opens while something rests on the yellow plate. Stand
+    on the plate, cut yourself in two with a vertical line, and keep the right-hand
+    piece.
   cutLimit: 2
   fallY: -12
   player: {fileID: 579504286}

@@ -23,6 +23,8 @@ public class CutController : MonoBehaviour
     [Header("Rules")]
     public float minPieceVolume = 0.25f;
     public bool leftoversCanRotate = false;
+    [Tooltip("If off, leftover pieces can only fall straight down; the player cannot push them sideways.")]
+    public bool leftoversCanBePushed = false;
     public float lineWidthPixels = 4f;
 
     public enum Phase { Playing, Drawing, Choosing }
@@ -214,7 +216,10 @@ public class CutController : MonoBehaviour
         var body = go.GetComponent<Rigidbody>();
         body.interpolation = RigidbodyInterpolation.Interpolate;
         body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-        if (!leftoversCanRotate) body.constraints = RigidbodyConstraints.FreezeRotation;
+        RigidbodyConstraints constraints = RigidbodyConstraints.None;
+        if (!leftoversCanRotate) constraints |= RigidbodyConstraints.FreezeRotation;
+        if (!leftoversCanBePushed) constraints |= RigidbodyConstraints.FreezePositionX | RigidbodyConstraints.FreezePositionZ;
+        body.constraints = constraints;
 
         go.AddComponent<Fadeable>();
     }
