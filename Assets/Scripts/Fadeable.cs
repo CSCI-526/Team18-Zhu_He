@@ -1,12 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// Add this to any level object that should fade out in 2D when it is not at the player's depth
-/// (walls, ceilings, doors). Leftover pieces get it automatically.
-/// The object's material must be transparent (URP Lit: Surface Type = Transparent).
-/// No links needed.
-/// </summary>
+// add this to anything that should fade out in 2D when it's not at the player's depth
+// (walls, ceilings, doors). leftover pieces get this automatically
+// material needs to be transparent (URP Lit -> Surface Type = Transparent)
 [RequireComponent(typeof(Renderer))]
 public class Fadeable : MonoBehaviour
 {
@@ -21,7 +18,7 @@ public class Fadeable : MonoBehaviour
     void Awake()
     {
         rend = GetComponent<Renderer>();
-        baseColor = rend.material.color; // creates a per-object copy of the material
+        baseColor = rend.material.color; // this makes a per object copy of the material
     }
 
     void OnEnable() { All.Add(this); }

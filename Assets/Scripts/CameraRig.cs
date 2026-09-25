@@ -1,22 +1,19 @@
 using UnityEngine;
 
-/// <summary>
-/// Put this on the Main Camera.
-/// 2D view: orthographic side view that rotates in 90-degree steps with Q / E.
-/// 3D view: perspective orbit camera (Q / E or hold right mouse to orbit, scroll to zoom).
-/// Tab switches between them.
-/// Links: Cam (this camera), Target (the Player).
-/// </summary>
+// this goes on the Main Camera
+// 2D mode: orthographic view, Q/E rotates it in 90 degree steps
+// 3D mode: perspective orbit cam, Q/E or hold right mouse to orbit, scroll to zoom
+// Tab switches between the two
 public class CameraRig : MonoBehaviour
 {
     public Camera cam;
     public Transform target;
 
-    [Header("2D view")]
+    [Header("2D View")]
     public float orthoSize = 6.5f;
     public float distance2D = 40f;
 
-    [Header("3D view")]
+    [Header("3D View")]
     public float distance3D = 15f;
     public float minDistance3D = 7f;
     public float maxDistance3D = 28f;
@@ -36,11 +33,11 @@ public class CameraRig : MonoBehaviour
     Vector3 focus;
     Vector3 lastMouse;
 
-    /// <summary>True while the 2D view is turning; the player cannot move during the turn.</summary>
+    // player can't move while the view is still turning
     public bool IsRotating => Is2D && Mathf.Abs(Mathf.DeltaAngle(yaw, yawTarget)) > 1f;
-    /// <summary>The screen's "right" direction in 2D, snapped to a world axis.</summary>
+    // screen "right" direction, snapped to a world axis
     public Vector3 ScreenRight => Snap(Quaternion.Euler(0f, yawTarget, 0f) * Vector3.right);
-    /// <summary>The direction the 2D camera looks along (the hidden depth axis).</summary>
+    // depth axis, basically the direction the camera is looking that you can't see
     public Vector3 DepthAxis => Snap(Quaternion.Euler(0f, yawTarget, 0f) * Vector3.forward);
     public Vector3 FlatRight => Quaternion.Euler(0f, yaw, 0f) * Vector3.right;
     public Vector3 FlatForward => Quaternion.Euler(0f, yaw, 0f) * Vector3.forward;
@@ -65,15 +62,12 @@ public class CameraRig : MonoBehaviour
 
     void LateUpdate()
     {
-        float dt = Time.unscaledDeltaTime; // keeps working while Cut Mode pauses time
+        float dt = Time.unscaledDeltaTime; // needs to keep going even when Cut Mode pauses time
         if (AllowInput) HandleInput(dt);
-
         yaw = Mathf.LerpAngle(yaw, yawTarget, 1f - Mathf.Exp(-rotateSharpness * dt));
         if (Mathf.Abs(Mathf.DeltaAngle(yaw, yawTarget)) < 0.05f) yaw = yawTarget;
-
         if (target != null && Time.timeScale > 0f)
             focus = Vector3.Lerp(focus, target.position, 1f - Mathf.Exp(-followSharpness * dt));
-
         Apply();
     }
 
@@ -107,7 +101,7 @@ public class CameraRig : MonoBehaviour
     public void ToggleView()
     {
         Is2D = !Is2D;
-        if (Is2D) yawTarget = Mathf.Round(yaw / 90f) * 90f; // snap to the closest side
+        if (Is2D) yawTarget = Mathf.Round(yaw / 90f) * 90f; // snap to closest side
     }
 
     void Apply()

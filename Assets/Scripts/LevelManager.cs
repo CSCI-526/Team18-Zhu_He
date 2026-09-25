@@ -1,11 +1,8 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-/// <summary>
-/// One per level scene. Holds the level's rules (cut limit, title, hint),
-/// restarts with R or when the player falls, and loads the next scene.
-/// Links: Player, HUD (optional).
-/// </summary>
+// one per level scene. holds the level's rules (cut limit, title, hint)
+// restarts with R or when the player falls, and loads the next scene
 public class LevelManager : MonoBehaviour
 {
     [Header("Level info")]
@@ -53,7 +50,7 @@ public class LevelManager : MonoBehaviour
         loading = true;
         Time.timeScale = 1f;
         int next = SceneManager.GetActiveScene().buildIndex + 1;
-        if (next >= SceneManager.sceneCountInBuildSettings) next = 0; // loop back to Level 1
+        if (next >= SceneManager.sceneCountInBuildSettings) next = 0; // loop back to level 1
         SceneManager.LoadScene(next);
     }
 

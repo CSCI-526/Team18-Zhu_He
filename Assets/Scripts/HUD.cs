@@ -2,10 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-/// <summary>
-/// Put this on the Canvas. Shows the level name and hint, cuts left, size, mass, view mode, and short messages.
-/// Links: four TextMeshPro texts, Level Manager, Player, Camera Rig, Cut Controller.
-/// </summary>
+// put this on the Canvas, shows level name, hint, cuts left, size, mass, view mode, and short messages
 public class HUD : MonoBehaviour
 {
     [Header("Texts")]

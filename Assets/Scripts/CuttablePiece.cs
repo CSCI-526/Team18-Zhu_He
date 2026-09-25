@@ -1,18 +1,16 @@
 using UnityEngine;
 
-/// <summary>
-/// Put this on the Player (and it is added automatically to leftover pieces).
-/// It builds the shape's mesh and collider, and sets the Rigidbody mass from the volume.
-/// Keep the Transform rotation at 0, 0, 0 and scale at 1, 1, 1; use Start Size to set the size.
-/// </summary>
+// put this on the Player (leftover pieces get it added automatically too)
+// builds the mesh and collider, and sets the Rigidbody mass based on volume
+// keep the transform rotation at 0,0,0 and scale at 1,1,1, use Start Size to change size
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer), typeof(MeshCollider))]
 [RequireComponent(typeof(Rigidbody))]
 public class CuttablePiece : MonoBehaviour
 {
-    [Tooltip("Starting size. 2 x 2 x 2 is the starting cube.")]
+    [Tooltip("starting size, 2 x 2 x 2 is the starting cube")]
     public Vector3 startSize = new Vector3(2f, 2f, 2f);
 
-    [Tooltip("Mass per unit of volume. With 1, a 2 x 2 x 2 cube has mass 8.")]
+    [Tooltip("mass per unit of volume, with 1 a 2x2x2 cube has mass 8")]
     public float density = 1f;
 
     public ConvexShape LocalShape { get; private set; }
@@ -54,10 +52,10 @@ public class CuttablePiece : MonoBehaviour
         body.mass = Mathf.Max(0.05f, Volume * density);
     }
 
-    /// <summary>The current shape in world coordinates.</summary>
+    // current shape in world coordinates
     public ConvexShape WorldShape() => LocalShape.Transformed(transform.localToWorldMatrix);
 
-    /// <summary>Replaces this piece's shape with a world-space shape and moves the object to its center.</summary>
+    // swaps in a world space shape and moves the object to its new center
     public void SetWorldShape(ConvexShape world)
     {
         CacheComponents();
@@ -69,7 +67,7 @@ public class CuttablePiece : MonoBehaviour
         Physics.SyncTransforms();
     }
 
-    // Shows the starting size in the Scene view, since the mesh is only built in Play mode.
+    // just draws the starting size as a gizmo in edit mode since the mesh only builds at runtime
     void OnDrawGizmos()
     {
         if (Application.isPlaying) return;

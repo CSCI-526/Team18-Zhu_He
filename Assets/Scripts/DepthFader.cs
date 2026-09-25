@@ -1,10 +1,7 @@
 using UnityEngine;
 
-/// <summary>
-/// In 2D, fades every Fadeable object that does not overlap the player's depth,
-/// so the player can tell what is actually in their path. In 3D nothing fades.
-/// Links: Camera Rig, Player.
-/// </summary>
+// in 2D, fades out every Fadeable object that isn't at the same depth as the player
+// so you can actually tell what's in your way. does nothing in 3D
 public class DepthFader : MonoBehaviour
 {
     public CameraRig cameraRig;

@@ -1,11 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// A convex 3D shape stored as a list of flat polygon faces.
-/// Handles cutting the shape with a plane, measuring its volume, and building a mesh for it.
-/// This is plain data (not a component), so you never add it to a GameObject.
-/// </summary>
+// stores a convex shape as a bunch of flat polygon faces
+// handles cutting it with a plane, getting the volume, building a mesh out of it
+// this isn't a component, just plain data, so you never attach it to a GameObject
 public class ConvexShape
 {
     public readonly List<Vector3[]> Faces;
@@ -13,7 +11,7 @@ public class ConvexShape
 
     public ConvexShape(List<Vector3[]> faces) { Faces = faces; }
 
-    /// <summary>A box of the given size, centered on the origin.</summary>
+    // makes a box centered on the origin
     public static ConvexShape Box(Vector3 size)
     {
         Vector3 h = size * 0.5f;
@@ -67,10 +65,8 @@ public class ConvexShape
         return v;
     }
 
-    /// <summary>
-    /// Cuts the shape with the plane dot(normal, p) = d.
-    /// Returns false if the plane does not pass through the shape.
-    /// </summary>
+    // cuts the shape with the plane dot(normal, p) = d
+    // returns false if the plane doesn't actually pass through the shape
     public bool Split(Vector3 normal, float d, out ConvexShape front, out ConvexShape back)
     {
         front = back = null;
@@ -112,7 +108,7 @@ public class ConvexShape
             if (bp.Count >= 3) backFaces.Add(bp.ToArray());
         }
 
-        // Remove duplicate cap points.
+        // get rid of duplicate points from the cut
         var pts = new List<Vector3>();
         foreach (var p in capPoints)
         {
@@ -122,7 +118,7 @@ public class ConvexShape
         }
         if (pts.Count < 3 || frontFaces.Count < 3 || backFaces.Count < 3) return false;
 
-        // Sort cap points around their center so they form a polygon.
+        // sort them by angle so they actually form a polygon
         Vector3 c = Vector3.zero;
         foreach (var p in pts) c += p;
         c /= pts.Count;
@@ -140,7 +136,7 @@ public class ConvexShape
         return true;
     }
 
-    /// <summary>Builds a flat-shaded mesh with every face pointing outward.</summary>
+    // builds a flat shaded mesh with every face pointing outward
     public Mesh BuildMesh()
     {
         var verts = new List<Vector3>();

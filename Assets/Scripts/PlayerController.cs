@@ -1,10 +1,7 @@
 using UnityEngine;
 
-/// <summary>
-/// Moves the player. In 2D it only moves left/right along the screen (which rotates with the view).
-/// In 3D it moves with WASD relative to the camera. Space jumps.
-/// Links: Camera Rig (the Main Camera with the CameraRig script).
-/// </summary>
+// moves the player. in 2D it only moves left/right along the screen (which rotates with the view)
+// in 3D it moves with WASD relative to the camera. space jumps
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerController : MonoBehaviour
 {
@@ -54,7 +51,7 @@ public class PlayerController : MonoBehaviour
         vel.z = move.z * moveSpeed;
         if (jumpQueued && grounded) vel.y = jumpVelocity;
         jumpQueued = false;
-        grounded = false; // set again by OnCollisionStay after this physics step
+        grounded = false; // gets set again next physics step by OnCollisionStay
         SetVelocity(vel);
     }
 

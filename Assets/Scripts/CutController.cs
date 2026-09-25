@@ -1,11 +1,8 @@
 using UnityEngine;
 
-/// <summary>
-/// Cut Mode. Press C to pause and draw a line with the left mouse button.
-/// The line becomes a cut plane that goes straight away from the camera.
-/// Then click a piece (or press 1 / 2) to keep it; the other piece stays behind as a leftover.
-/// Links: Player, Player Controller, Camera Rig, Level Manager, Cut Line, and three materials.
-/// </summary>
+// Cut Mode. Press C to pause and drag a line with the left mouse button
+// that line becomes a cut plane that goes straight back from the camera
+// then click a piece (or press 1 / 2) to keep it, the other one just gets left behind
 public class CutController : MonoBehaviour
 {
     [Header("Links")]
@@ -18,12 +15,12 @@ public class CutController : MonoBehaviour
     [Header("Materials")]
     public Material pieceAMaterial;   // preview color for piece 1 (blue)
     public Material pieceBMaterial;   // preview color for piece 2 (orange)
-    public Material leftoverMaterial; // color of pieces left behind
+    public Material leftoverMaterial; // color of the piece that gets left behind
 
     [Header("Rules")]
     public float minPieceVolume = 0.25f;
     public bool leftoversCanRotate = false;
-    [Tooltip("If off, leftover pieces can only fall straight down; the player cannot push them sideways.")]
+    [Tooltip("if off, leftover pieces can only fall straight down, player can't push them")]
     public bool leftoversCanBePushed = false;
     public float lineWidthPixels = 4f;
 
@@ -128,8 +125,8 @@ public class CutController : MonoBehaviour
         Ray r1 = cam.ScreenPointToRay(a);
         Ray r2 = cam.ScreenPointToRay(b);
 
-        // Three points: both ends of the line, and one point further along the first ray.
-        // They define a plane containing the drawn line and the viewing direction.
+        // both ends of the line, plus a point further along the first ray
+        // those three points define a plane that contains the line and the view direction
         Vector3 p1 = r1.GetPoint(1f), p2 = r2.GetPoint(1f), p3 = r1.GetPoint(5f);
         Vector3 normal = Vector3.Cross(p2 - p1, p3 - p1);
         if (normal.sqrMagnitude < 1e-10f) { cutLine.enabled = false; return; }
@@ -169,7 +166,7 @@ public class CutController : MonoBehaviour
         go.AddComponent<MeshRenderer>().sharedMaterial = mat;
         var col = go.AddComponent<MeshCollider>();
         col.convex = true;
-        col.isTrigger = true; // only used for clicking
+        col.isTrigger = true; // just used for clicking
         col.sharedMesh = mesh;
         return go;
     }
@@ -207,7 +204,7 @@ public class CutController : MonoBehaviour
     void SpawnLeftover(ConvexShape shape)
     {
         var go = new GameObject("Leftover Piece");
-        var piece = go.AddComponent<CuttablePiece>(); // also adds MeshFilter, MeshRenderer, MeshCollider, Rigidbody
+        var piece = go.AddComponent<CuttablePiece>(); // this also adds MeshFilter, MeshRenderer, MeshCollider, Rigidbody
         piece.density = player.density;
         piece.SetWorldShape(shape);
         go.GetComponent<MeshRenderer>().sharedMaterial = leftoverMaterial;

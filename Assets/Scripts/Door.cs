@@ -1,10 +1,8 @@
 using UnityEngine;
 
-/// <summary>
-/// Put this on the door object (a cube with a Box Collider).
-/// A Pressure Plate opens and closes it. It will not close on top of the player or a piece.
-/// No links needed; the Pressure Plate links to this.
-/// </summary>
+// put this on the door object (a cube with a Box Collider)
+// a Pressure Plate opens and closes it, won't close on top of the player or a piece
+// no links needed here, Pressure Plate links to this
 [RequireComponent(typeof(Collider))]
 public class Door : MonoBehaviour
 {

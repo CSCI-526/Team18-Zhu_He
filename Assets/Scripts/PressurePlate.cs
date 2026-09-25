@@ -1,17 +1,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// Put this on the plate object. Adds up the mass of everything resting on top of it,
-/// and keeps the linked door open while that mass is at least Required Mass.
-/// Links: Door.
-/// </summary>
+// put this on the plate object. adds up the mass of everything resting on top of it
+// and keeps the linked door open while that mass is at least Required Mass
 [RequireComponent(typeof(Renderer))]
 public class PressurePlate : MonoBehaviour
 {
     public Door door;
     public float requiredMass = 1.5f;
-    [Tooltip("How far above the plate's top surface objects are detected.")]
+    [Tooltip("how far above the plate's top surface objects get detected")]
     public float detectHeight = 0.4f;
 
     public float CurrentMass { get; private set; }
