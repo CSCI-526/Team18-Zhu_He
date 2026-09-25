@@ -65,21 +65,7 @@ public class PlayerController : MonoBehaviour
 
     public void StopMoving() => SetVelocity(Vector3.zero);
 
-    Vector3 GetVelocity()
-    {
-#if UNITY_6000_0_OR_NEWER
-        return body.linearVelocity;
-#else
-        return body.velocity;
-#endif
-    }
+    Vector3 GetVelocity() => body.linearVelocity;
 
-    void SetVelocity(Vector3 v)
-    {
-#if UNITY_6000_0_OR_NEWER
-        body.linearVelocity = v;
-#else
-        body.velocity = v;
-#endif
-    }
+    void SetVelocity(Vector3 v) => body.linearVelocity = v;
 }
