@@ -1,62 +1,85 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-// one per level scene. holds the level's rules (cut limit, title, hint)
-// restarts with R or when the player falls, and loads the next scene
 public class LevelManager : MonoBehaviour
 {
-    [Header("Level info")]
-    public string levelTitle = "Cut to fit";
-    [TextArea(2, 4)] public string levelHint = "";
+    public string levelName = "Cut to fit";
+    public string hint = "";
 
-    [Header("Rules")]
-    public int cutLimit = 2;
-    public float fallY = -12f;
+    public int maxCuts = 2;
+    public float deathY = -12f;
 
-    [Header("Links")]
     public CuttablePiece player;
     public HUD hud;
 
-    public int CutsLeft { get; private set; }
-    public bool HasCutsLeft => CutsLeft > 0;
+    public int cutsLeft;
 
-    bool loading;
+    private bool isLoading;
 
     void Awake()
     {
         Time.timeScale = 1f;
-        CutsLeft = cutLimit;
+        cutsLeft = maxCuts;
     }
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.R)) Restart();
-        if (player != null && player.transform.position.y < fallY) Restart();
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            RestartLevel();
+        }
+
+        if (player != null && player.transform.position.y < deathY)
+        {
+            RestartLevel();
+        }
     }
 
-    public void UseCut() => CutsLeft = Mathf.Max(0, CutsLeft - 1);
-
-    public void Restart()
+    public bool CanCut()
     {
-        if (loading) return;
-        loading = true;
-        Time.timeScale = 1f;
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        return cutsLeft > 0;
     }
 
-    public void CompleteLevel()
+    public void UseCut()
     {
-        if (loading) return;
-        loading = true;
-        Time.timeScale = 1f;
-        int next = SceneManager.GetActiveScene().buildIndex + 1;
-        if (next >= SceneManager.sceneCountInBuildSettings) next = 0; // loop back to level 1
-        SceneManager.LoadScene(next);
+        cutsLeft = cutsLeft - 1;
+        if (cutsLeft < 0) cutsLeft = 0;
     }
 
-    public void ShowMessage(string message)
+    public void RestartLevel()
     {
-        if (hud != null) hud.ShowMessage(message);
-        else Debug.Log(message);
+        if (!isLoading)
+        {
+            isLoading = true;
+            Time.timeScale = 1f;
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        }
+    }
+
+    public void NextLevel()
+    {
+        if (!isLoading)
+        {
+            isLoading = true;
+            Time.timeScale = 1f;
+            int nextIndex = SceneManager.GetActiveScene().buildIndex + 1;
+            if (nextIndex >= SceneManager.sceneCountInBuildSettings)
+            {
+                nextIndex = 0;
+            }
+            SceneManager.LoadScene(nextIndex);
+        }
+    }
+
+    public void ShowMessage(string msg)
+    {
+        if (hud != null)
+        {
+            hud.ShowMessage(msg);
+        }
+        else
+        {
+            Debug.Log(msg);
+        }
     }
 }

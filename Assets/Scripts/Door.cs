@@ -1,17 +1,12 @@
 using UnityEngine;
 
-// put this on the door object (a cube with a Box Collider)
-// a Pressure Plate opens and closes it, won't close on top of the player or a piece
-// no links needed here, Pressure Plate links to this
-[RequireComponent(typeof(Collider))]
 public class Door : MonoBehaviour
 {
-    public bool IsOpen { get; private set; }
+    public bool isOpen;
 
-    Collider col;
-    Renderer rend;
-    Bounds closedBounds;
-    readonly Collider[] buffer = new Collider[16];
+    private Collider col;
+    private Renderer rend;
+    private Bounds closedBounds;
 
     void Awake()
     {
@@ -20,24 +15,33 @@ public class Door : MonoBehaviour
         closedBounds = col.bounds;
     }
 
-    public void SetOpen(bool open)
+    public void SetDoor(bool open)
     {
-        if (open == IsOpen) return;
-        if (!open && SomethingInside()) return; // wait until the doorway is clear
-        IsOpen = open;
-        col.enabled = !open;
-        if (rend != null) rend.enabled = !open;
-    }
-
-    bool SomethingInside()
-    {
-        int n = Physics.OverlapBoxNonAlloc(closedBounds.center, closedBounds.extents * 0.98f, buffer,
-                                           Quaternion.identity, ~0, QueryTriggerInteraction.Ignore);
-        for (int i = 0; i < n; i++)
+        if (open != isOpen)
         {
-            Rigidbody rb = buffer[i].attachedRigidbody;
-            if (rb != null && !rb.isKinematic) return true;
+            bool somethingInside = false;
+            if (!open)
+            {
+                Collider[] cols = Physics.OverlapBox(closedBounds.center, closedBounds.extents * 0.98f, Quaternion.identity, ~0, QueryTriggerInteraction.Ignore);
+                for (int i = 0; i < cols.Length; i++)
+                {
+                    Rigidbody rb = cols[i].attachedRigidbody;
+                    if (rb != null && !rb.isKinematic)
+                    {
+                        somethingInside = true;
+                    }
+                }
+            }
+
+            if (!somethingInside)
+            {
+                isOpen = open;
+                col.enabled = !open;
+                if (rend != null)
+                {
+                    rend.enabled = !open;
+                }
+            }
         }
-        return false;
     }
 }

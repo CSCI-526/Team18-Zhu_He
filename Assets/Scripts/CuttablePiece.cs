@@ -1,77 +1,75 @@
 using UnityEngine;
 
-// put this on the Player (leftover pieces get it added automatically too)
-// builds the mesh and collider, and sets the Rigidbody mass based on volume
-// keep the transform rotation at 0,0,0 and scale at 1,1,1, use Start Size to change size
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer), typeof(MeshCollider))]
 [RequireComponent(typeof(Rigidbody))]
 public class CuttablePiece : MonoBehaviour
 {
-    [Tooltip("starting size, 2 x 2 x 2 is the starting cube")]
-    public Vector3 startSize = new Vector3(2f, 2f, 2f);
-
-    [Tooltip("mass per unit of volume, with 1 a 2x2x2 cube has mass 8")]
+    public Vector3 boxSize = new Vector3(2f, 2f, 2f);
     public float density = 1f;
 
-    public ConvexShape LocalShape { get; private set; }
-    public float Volume { get; private set; }
-    public Vector3 Size => LocalShape != null ? LocalShape.GetBounds().size : startSize;
+    public ConvexShape shape;
+    public float volume;
 
-    MeshFilter meshFilter;
-    MeshCollider meshCollider;
-    Rigidbody body;
+    private MeshFilter meshFilter;
+    private MeshCollider meshCol;
+    private Rigidbody rb;
 
     void Awake()
     {
-        CacheComponents();
-        if (LocalShape == null) SetLocalShape(ConvexShape.Box(startSize));
-    }
-
-    void CacheComponents()
-    {
-        if (meshFilter != null) return;
         meshFilter = GetComponent<MeshFilter>();
-        meshCollider = GetComponent<MeshCollider>();
-        body = GetComponent<Rigidbody>();
+        meshCol = GetComponent<MeshCollider>();
+        rb = GetComponent<Rigidbody>();
+
+        if (shape == null)
+        {
+            SetShape(ConvexShape.MakeBox(boxSize));
+        }
     }
 
-    public void SetLocalShape(ConvexShape shape)
+    public Vector3 GetSize()
     {
-        CacheComponents();
-        LocalShape = shape;
-        Mesh mesh = shape.BuildMesh();
+        if (shape != null) return shape.GetBounds().size;
+        return boxSize;
+    }
 
-        Mesh old = meshFilter.sharedMesh;
+    public void SetShape(ConvexShape newShape)
+    {
+        shape = newShape;
+        Mesh mesh = newShape.MakeMesh();
+
+        Mesh oldMesh = meshFilter.sharedMesh;
         meshFilter.sharedMesh = mesh;
-        meshCollider.sharedMesh = null;
-        meshCollider.convex = true;
-        meshCollider.sharedMesh = mesh;
-        if (old != null && old.name == "CutPiece") Destroy(old);
+        meshCol.sharedMesh = null;
+        meshCol.convex = true;
+        meshCol.sharedMesh = mesh;
+        if (oldMesh != null && oldMesh.name == "CutPiece")
+        {
+            Destroy(oldMesh);
+        }
 
-        Volume = shape.Volume();
-        body.mass = Mathf.Max(0.05f, Volume * density);
+        volume = newShape.GetVolume();
+        rb.mass = Mathf.Max(0.05f, volume * density);
     }
 
-    // current shape in world coordinates
-    public ConvexShape WorldShape() => LocalShape.Transformed(transform.localToWorldMatrix);
-
-    // swaps in a world space shape and moves the object to its new center
-    public void SetWorldShape(ConvexShape world)
+    public ConvexShape GetWorldShape()
     {
-        CacheComponents();
-        Vector3 center = world.GetBounds().center;
+        return shape.ApplyMatrix(transform.localToWorldMatrix);
+    }
+
+    public void SetWorldShape(ConvexShape worldShape)
+    {
+        Vector3 center = worldShape.GetBounds().center;
         transform.SetPositionAndRotation(center, Quaternion.identity);
-        body.position = center;
-        body.rotation = Quaternion.identity;
-        SetLocalShape(world.Offset(-center));
+        rb.position = center;
+        rb.rotation = Quaternion.identity;
+        SetShape(worldShape.MoveBy(-center));
         Physics.SyncTransforms();
     }
 
-    // just draws the starting size as a gizmo in edit mode since the mesh only builds at runtime
     void OnDrawGizmos()
     {
         if (Application.isPlaying) return;
         Gizmos.color = new Color(0.18f, 0.36f, 0.83f, 1f);
-        Gizmos.DrawWireCube(transform.position, startSize);
+        Gizmos.DrawWireCube(transform.position, boxSize);
     }
 }

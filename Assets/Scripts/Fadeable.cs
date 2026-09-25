@@ -1,35 +1,46 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// add this to anything that should fade out in 2D when it's not at the player's depth
-// (walls, ceilings, doors). leftover pieces get this automatically
-// material needs to be transparent (URP Lit -> Surface Type = Transparent)
-[RequireComponent(typeof(Renderer))]
 public class Fadeable : MonoBehaviour
 {
-    public static readonly List<Fadeable> All = new List<Fadeable>();
+    public static List<Fadeable> allFadeables = new List<Fadeable>();
 
-    Renderer rend;
-    Color baseColor;
-    bool faded;
-
-    public Bounds Bounds => rend.bounds;
+    private Renderer rend;
+    private Color startColor;
+    private bool isFaded;
 
     void Awake()
     {
         rend = GetComponent<Renderer>();
-        baseColor = rend.material.color; // this makes a per object copy of the material
+        startColor = rend.material.color;
     }
 
-    void OnEnable() { All.Add(this); }
-    void OnDisable() { All.Remove(this); }
-
-    public void SetFaded(bool value, float alpha)
+    public Bounds GetBounds()
     {
-        if (value == faded) return;
-        faded = value;
-        Color c = baseColor;
-        if (faded) c.a = baseColor.a * alpha;
-        rend.material.color = c;
+        return rend.bounds;
+    }
+
+    void OnEnable()
+    {
+        allFadeables.Add(this);
+    }
+
+    void OnDisable()
+    {
+        allFadeables.Remove(this);
+    }
+
+    public void SetFade(bool fade, float alpha)
+    {
+        if (fade != isFaded)
+        {
+            isFaded = fade;
+            Color color = startColor;
+            if (isFaded)
+            {
+                color.a = startColor.a * alpha;
+            }
+            rend.material.color = color;
+        }
     }
 }

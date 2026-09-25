@@ -1,71 +1,90 @@
 using UnityEngine;
 
-// moves the player. in 2D it only moves left/right along the screen (which rotates with the view)
-// in 3D it moves with WASD relative to the camera. space jumps
-[RequireComponent(typeof(Rigidbody))]
 public class PlayerController : MonoBehaviour
 {
-    public CameraRig cameraRig;
-    public float moveSpeed = 6f;
-    public float jumpVelocity = 8.5f;
+    public CameraRig camScript;
+    public float speed = 6f;
+    public float jumpForce = 8.5f;
 
-    [HideInInspector] public bool inputEnabled = true;
+    public bool canMove = true;
 
-    Rigidbody body;
-    bool grounded;
-    bool jumpQueued;
+    private Rigidbody rb;
+    private bool isGrounded;
+    private bool jumpPressed;
 
     void Awake()
     {
-        body = GetComponent<Rigidbody>();
-        body.constraints = RigidbodyConstraints.FreezeRotation; // the shape itself never rotates
-        body.interpolation = RigidbodyInterpolation.Interpolate;
-        body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        rb = GetComponent<Rigidbody>();
+        rb.constraints = RigidbodyConstraints.FreezeRotation;
+        rb.interpolation = RigidbodyInterpolation.Interpolate;
+        rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
     }
 
     void Update()
     {
-        if (inputEnabled && Input.GetKeyDown(KeyCode.Space)) jumpQueued = true;
+        if (canMove && Input.GetKeyDown(KeyCode.Space))
+        {
+            jumpPressed = true;
+        }
     }
 
     void FixedUpdate()
     {
-        Vector3 move = Vector3.zero;
-        if (inputEnabled)
+        Vector3 moveDir = Vector3.zero;
+        if (canMove)
         {
-            float h = Input.GetAxisRaw("Horizontal");
-            float v = Input.GetAxisRaw("Vertical");
-            if (cameraRig.Is2D)
+            float horizontal = Input.GetAxisRaw("Horizontal");
+            float vertical = Input.GetAxisRaw("Vertical");
+            if (camScript.is2D)
             {
-                if (!cameraRig.IsRotating) move = cameraRig.ScreenRight * h;
+                if (!camScript.IsTurning())
+                {
+                    moveDir = camScript.GetRightDir() * horizontal;
+                }
             }
             else
             {
-                move = cameraRig.FlatForward * v + cameraRig.FlatRight * h;
-                if (move.sqrMagnitude > 1f) move.Normalize();
+                moveDir = camScript.GetCamForward() * vertical + camScript.GetCamRight() * horizontal;
+                if (moveDir.sqrMagnitude > 1f) moveDir.Normalize();
             }
         }
 
-        Vector3 vel = GetVelocity();
-        vel.x = move.x * moveSpeed;
-        vel.z = move.z * moveSpeed;
-        if (jumpQueued && grounded) vel.y = jumpVelocity;
-        jumpQueued = false;
-        grounded = false; // gets set again next physics step by OnCollisionStay
-        SetVelocity(vel);
+        Vector3 velocity = GetVel();
+        velocity.x = moveDir.x * speed;
+        velocity.z = moveDir.z * speed;
+        if (jumpPressed && isGrounded)
+        {
+            velocity.y = jumpForce;
+        }
+        jumpPressed = false;
+        isGrounded = false;
+        SetVel(velocity);
     }
 
     void OnCollisionStay(Collision collision)
     {
         for (int i = 0; i < collision.contactCount; i++)
         {
-            if (collision.GetContact(i).normal.y > 0.5f) { grounded = true; return; }
+            if (collision.GetContact(i).normal.y > 0.5f)
+            {
+                isGrounded = true;
+                return;
+            }
         }
     }
 
-    public void StopMoving() => SetVelocity(Vector3.zero);
+    public void StopPlayer()
+    {
+        SetVel(Vector3.zero);
+    }
 
-    Vector3 GetVelocity() => body.linearVelocity;
+    Vector3 GetVel()
+    {
+        return rb.linearVelocity;
+    }
 
-    void SetVelocity(Vector3 v) => body.linearVelocity = v;
+    void SetVel(Vector3 vel)
+    {
+        rb.linearVelocity = vel;
+    }
 }

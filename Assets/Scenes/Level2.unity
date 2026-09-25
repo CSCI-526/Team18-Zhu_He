@@ -278,8 +278,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PressurePlate
   door: {fileID: 996734506}
-  requiredMass: 1.5
-  detectHeight: 0.4
+  massNeeded: 1.5
+  checkHeight: 0.4
 --- !u!23 &212120948
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -383,9 +383,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 02083ca660870e9448ea643390080792, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DepthFader
-  cameraRig: {fileID: 961739754}
+  camScript: {fileID: 961739754}
   player: {fileID: 579504286}
-  fadedAlpha: 0.2
+  fadeAlpha: 0.2
 --- !u!114 &425685392
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -399,17 +399,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CutController
   player: {fileID: 579504286}
-  playerController: {fileID: 579504285}
-  cameraRig: {fileID: 961739754}
+  playerScript: {fileID: 579504285}
+  camScript: {fileID: 961739754}
   levelManager: {fileID: 425685393}
-  cutLine: {fileID: 1996090764}
-  pieceAMaterial: {fileID: 2100000, guid: 673f60214b8b06d4087da363b6f7c2cc, type: 2}
-  pieceBMaterial: {fileID: 2100000, guid: 87404512654788046b4b9e8d6f123b31, type: 2}
-  leftoverMaterial: {fileID: 2100000, guid: 527896c268b1705428c40e5a561b8aef, type: 2}
-  minPieceVolume: 0.25
-  leftoversCanRotate: 0
-  leftoversCanBePushed: 0
-  lineWidthPixels: 4
+  lineRenderer: {fileID: 1996090764}
+  piece1Mat: {fileID: 2100000, guid: 673f60214b8b06d4087da363b6f7c2cc, type: 2}
+  piece2Mat: {fileID: 2100000, guid: 87404512654788046b4b9e8d6f123b31, type: 2}
+  leftoverMat: {fileID: 2100000, guid: 527896c268b1705428c40e5a561b8aef, type: 2}
+  minSize: 0.25
+  canRotateLeftover: 0
+  canPushLeftover: 0
+  lineWidth: 4
 --- !u!114 &425685393
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -422,12 +422,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8f464361cb922004a8b8d24f4c392580, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LevelManager
-  levelTitle: Cut to fit
-  levelHint: The red door only opens while something rests on the yellow plate. Stand
+  levelName: Cut to fit
+  hint: The red door only opens while something rests on the yellow plate. Stand
     on the plate, cut yourself in two with a vertical line, and keep the right-hand
     piece.
-  cutLimit: 2
-  fallY: -12
+  maxCuts: 2
+  deathY: -12
   player: {fileID: 579504286}
   hud: {fileID: 1943445777}
 --- !u!4 &425685394
@@ -753,10 +753,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb16b1cbe7ea3b84dbb4802a841b014e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
-  cameraRig: {fileID: 961739754}
-  moveSpeed: 6
-  jumpVelocity: 8.5
-  inputEnabled: 1
+  camScript: {fileID: 961739754}
+  speed: 6
+  jumpForce: 8.5
+  canMove: 1
 --- !u!114 &579504286
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -769,7 +769,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57aaca50b3c84654eb902a7bdfe583a3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CuttablePiece
-  startSize: {x: 2, y: 2, z: 2}
+  boxSize: {x: 2, y: 2, z: 2}
   density: 1
 --- !u!54 &579504287
 Rigidbody:
@@ -1043,18 +1043,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CameraRig
   cam: {fileID: 961739752}
-  target: {fileID: 579504291}
-  orthoSize: 6.5
+  player: {fileID: 579504291}
+  size2D: 6.5
   distance2D: 40
   distance3D: 15
-  minDistance3D: 7
-  maxDistance3D: 28
-  pitch3D: 25
-  keyOrbitSpeed: 120
-  mouseOrbitSpeed: 0.25
-  followSharpness: 8
-  rotateSharpness: 10
-  heightOffset: 0.8
+  minZoom: 7
+  maxZoom: 28
+  angle3D: 25
+  rotateSpeed: 120
+  mouseSensitivity: 0.25
+  followSpeed: 8
+  turnSpeed: 10
+  offsetY: 0.8
 --- !u!1 &996734504
 GameObject:
   m_ObjectHideFlags: 0
@@ -1685,9 +1685,9 @@ MonoBehaviour:
   messageText: {fileID: 507094157}
   levelManager: {fileID: 425685393}
   player: {fileID: 579504286}
-  cameraRig: {fileID: 961739754}
-  cutController: {fileID: 425685392}
-  messageDuration: 2.5
+  camScript: {fileID: 961739754}
+  cutScript: {fileID: 425685392}
+  messageTime: 2.5
 --- !u!114 &1943445778
 MonoBehaviour:
   m_ObjectHideFlags: 0

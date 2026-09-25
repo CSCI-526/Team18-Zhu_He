@@ -1,188 +1,276 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// stores a convex shape as a bunch of flat polygon faces
-// handles cutting it with a plane, getting the volume, building a mesh out of it
-// this isn't a component, just plain data, so you never attach it to a GameObject
 public class ConvexShape
 {
-    public readonly List<Vector3[]> Faces;
-    const float Eps = 1e-4f;
+    public List<Vector3[]> faces;
+    const float epsilon = 0.0001f;
 
-    public ConvexShape(List<Vector3[]> faces) { Faces = faces; }
-
-    // makes a box centered on the origin
-    public static ConvexShape Box(Vector3 size)
+    public ConvexShape(List<Vector3[]> faceList)
     {
-        Vector3 h = size * 0.5f;
-        Vector3 V(float x, float y, float z) => new Vector3(x * h.x, y * h.y, z * h.z);
-        return new ConvexShape(new List<Vector3[]>
-        {
-            new[] { V( 1,-1,-1), V( 1, 1,-1), V( 1, 1, 1), V( 1,-1, 1) },
-            new[] { V(-1,-1,-1), V(-1,-1, 1), V(-1, 1, 1), V(-1, 1,-1) },
-            new[] { V(-1, 1,-1), V(-1, 1, 1), V( 1, 1, 1), V( 1, 1,-1) },
-            new[] { V(-1,-1,-1), V( 1,-1,-1), V( 1,-1, 1), V(-1,-1, 1) },
-            new[] { V(-1,-1, 1), V( 1,-1, 1), V( 1, 1, 1), V(-1, 1, 1) },
-            new[] { V(-1,-1,-1), V(-1, 1,-1), V( 1, 1,-1), V( 1,-1,-1) },
-        });
+        faces = faceList;
     }
 
-    public ConvexShape Transformed(Matrix4x4 m)
+    public static ConvexShape MakeBox(Vector3 size)
     {
-        var faces = new List<Vector3[]>(Faces.Count);
-        foreach (var f in Faces)
+        Vector3 half = size * 0.5f;
+        List<Vector3[]> boxFaces = new List<Vector3[]>();
+        boxFaces.Add(new Vector3[] { GetCorner(half, 1, -1, -1), GetCorner(half, 1, 1, -1), GetCorner(half, 1, 1, 1), GetCorner(half, 1, -1, 1) });
+        boxFaces.Add(new Vector3[] { GetCorner(half, -1, -1, -1), GetCorner(half, -1, -1, 1), GetCorner(half, -1, 1, 1), GetCorner(half, -1, 1, -1) });
+        boxFaces.Add(new Vector3[] { GetCorner(half, -1, 1, -1), GetCorner(half, -1, 1, 1), GetCorner(half, 1, 1, 1), GetCorner(half, 1, 1, -1) });
+        boxFaces.Add(new Vector3[] { GetCorner(half, -1, -1, -1), GetCorner(half, 1, -1, -1), GetCorner(half, 1, -1, 1), GetCorner(half, -1, -1, 1) });
+        boxFaces.Add(new Vector3[] { GetCorner(half, -1, -1, 1), GetCorner(half, 1, -1, 1), GetCorner(half, 1, 1, 1), GetCorner(half, -1, 1, 1) });
+        boxFaces.Add(new Vector3[] { GetCorner(half, -1, -1, -1), GetCorner(half, -1, 1, -1), GetCorner(half, 1, 1, -1), GetCorner(half, 1, -1, -1) });
+        return new ConvexShape(boxFaces);
+    }
+
+    static Vector3 GetCorner(Vector3 half, float x, float y, float z)
+    {
+        return new Vector3(x * half.x, y * half.y, z * half.z);
+    }
+
+    public ConvexShape ApplyMatrix(Matrix4x4 matrix)
+    {
+        List<Vector3[]> newFaces = new List<Vector3[]>(faces.Count);
+        foreach (Vector3[] face in faces)
         {
-            var nf = new Vector3[f.Length];
-            for (int i = 0; i < f.Length; i++) nf[i] = m.MultiplyPoint3x4(f[i]);
-            faces.Add(nf);
+            Vector3[] newFace = new Vector3[face.Length];
+            for (int i = 0; i < face.Length; i++)
+            {
+                newFace[i] = matrix.MultiplyPoint3x4(face[i]);
+            }
+            newFaces.Add(newFace);
         }
-        return new ConvexShape(faces);
+        return new ConvexShape(newFaces);
     }
 
-    public ConvexShape Offset(Vector3 delta) => Transformed(Matrix4x4.Translate(delta));
-
-    public Vector3 Centroid()
+    public ConvexShape MoveBy(Vector3 offset)
     {
-        Vector3 sum = Vector3.zero; int n = 0;
-        foreach (var f in Faces) foreach (var p in f) { sum += p; n++; }
-        return n > 0 ? sum / n : Vector3.zero;
+        return ApplyMatrix(Matrix4x4.Translate(offset));
+    }
+
+    public Vector3 GetCenter()
+    {
+        Vector3 sum = Vector3.zero;
+        int count = 0;
+        foreach (Vector3[] face in faces)
+        {
+            foreach (Vector3 point in face)
+            {
+                sum += point;
+                count++;
+            }
+        }
+        if (count > 0) return sum / count;
+        return Vector3.zero;
     }
 
     public Bounds GetBounds()
     {
-        var b = new Bounds(Faces[0][0], Vector3.zero);
-        foreach (var f in Faces) foreach (var p in f) b.Encapsulate(p);
-        return b;
-    }
-
-    public float Volume()
-    {
-        Vector3 c = Centroid();
-        float v = 0f;
-        foreach (var f in Faces)
-            for (int i = 1; i < f.Length - 1; i++)
-                v += Mathf.Abs(Vector3.Dot(f[0] - c, Vector3.Cross(f[i] - c, f[i + 1] - c))) / 6f;
-        return v;
-    }
-
-    // cuts the shape with the plane dot(normal, p) = d
-    // returns false if the plane doesn't actually pass through the shape
-    public bool Split(Vector3 normal, float d, out ConvexShape front, out ConvexShape back)
-    {
-        front = back = null;
-        var frontFaces = new List<Vector3[]>();
-        var backFaces = new List<Vector3[]>();
-        var capPoints = new List<Vector3>();
-
-        foreach (var f in Faces)
+        Bounds bounds = new Bounds(faces[0][0], Vector3.zero);
+        foreach (Vector3[] face in faces)
         {
-            int count = f.Length;
-            var s = new float[count];
-            bool allOnPlane = true;
-            for (int i = 0; i < count; i++)
+            foreach (Vector3 point in face)
             {
-                s[i] = Vector3.Dot(normal, f[i]) - d;
-                if (Mathf.Abs(s[i]) > Eps) allOnPlane = false;
+                bounds.Encapsulate(point);
             }
-            if (allOnPlane) continue;
+        }
+        return bounds;
+    }
 
-            var fp = new List<Vector3>();
-            var bp = new List<Vector3>();
+    public float GetVolume()
+    {
+        Vector3 center = GetCenter();
+        float volume = 0f;
+        foreach (Vector3[] face in faces)
+        {
+            for (int i = 1; i < face.Length - 1; i++)
+            {
+                volume += Mathf.Abs(Vector3.Dot(face[0] - center, Vector3.Cross(face[i] - center, face[i + 1] - center))) / 6f;
+            }
+        }
+        return volume;
+    }
+
+    public bool Cut(Vector3 normal, float planeDist, out ConvexShape frontShape, out ConvexShape backShape)
+    {
+        frontShape = null;
+        backShape = null;
+        List<Vector3[]> frontFaces = new List<Vector3[]>();
+        List<Vector3[]> backFaces = new List<Vector3[]>();
+        List<Vector3> cutPoints = new List<Vector3>();
+
+        foreach (Vector3[] face in faces)
+        {
+            int count = face.Length;
+            float[] dist = new float[count];
+            bool onPlane = true;
             for (int i = 0; i < count; i++)
             {
-                int j = (i + 1) % count;
-                Vector3 a = f[i], b = f[j];
-                float sa = s[i], sb = s[j];
+                dist[i] = Vector3.Dot(normal, face[i]) - planeDist;
+                if (Mathf.Abs(dist[i]) > epsilon) onPlane = false;
+            }
+            if (onPlane) continue;
 
-                if (sa > Eps) fp.Add(a);
-                else if (sa < -Eps) bp.Add(a);
-                else { fp.Add(a); bp.Add(a); capPoints.Add(a); }
+            List<Vector3> frontPoints = new List<Vector3>();
+            List<Vector3> backPoints = new List<Vector3>();
+            for (int i = 0; i < count; i++)
+            {
+                int next = (i + 1) % count;
+                Vector3 pointA = face[i];
+                Vector3 pointB = face[next];
+                float distA = dist[i];
+                float distB = dist[next];
 
-                if ((sa > Eps && sb < -Eps) || (sa < -Eps && sb > Eps))
+                if (distA > epsilon)
                 {
-                    Vector3 p = Vector3.Lerp(a, b, sa / (sa - sb));
-                    fp.Add(p); bp.Add(p); capPoints.Add(p);
+                    frontPoints.Add(pointA);
+                }
+                else if (distA < -epsilon)
+                {
+                    backPoints.Add(pointA);
+                }
+                else
+                {
+                    frontPoints.Add(pointA);
+                    backPoints.Add(pointA);
+                    cutPoints.Add(pointA);
+                }
+
+                if ((distA > epsilon && distB < -epsilon) || (distA < -epsilon && distB > epsilon))
+                {
+                    Vector3 hitPoint = Vector3.Lerp(pointA, pointB, distA / (distA - distB));
+                    frontPoints.Add(hitPoint);
+                    backPoints.Add(hitPoint);
+                    cutPoints.Add(hitPoint);
                 }
             }
-            if (fp.Count >= 3) frontFaces.Add(fp.ToArray());
-            if (bp.Count >= 3) backFaces.Add(bp.ToArray());
+            if (frontPoints.Count >= 3) frontFaces.Add(frontPoints.ToArray());
+            if (backPoints.Count >= 3) backFaces.Add(backPoints.ToArray());
         }
 
-        // get rid of duplicate points from the cut
-        var pts = new List<Vector3>();
-        foreach (var p in capPoints)
+        List<Vector3> points = new List<Vector3>();
+        foreach (Vector3 p in cutPoints)
         {
-            bool dup = false;
-            foreach (var q in pts) if ((p - q).sqrMagnitude < 1e-8f) { dup = true; break; }
-            if (!dup) pts.Add(p);
+            bool alreadyAdded = false;
+            foreach (Vector3 q in points)
+            {
+                if ((p - q).sqrMagnitude < 1e-8f)
+                {
+                    alreadyAdded = true;
+                    break;
+                }
+            }
+            if (!alreadyAdded) points.Add(p);
         }
-        if (pts.Count < 3 || frontFaces.Count < 3 || backFaces.Count < 3) return false;
+        if (points.Count < 3 || frontFaces.Count < 3 || backFaces.Count < 3) return false;
 
-        // sort them by angle so they actually form a polygon
-        Vector3 c = Vector3.zero;
-        foreach (var p in pts) c += p;
-        c /= pts.Count;
-        Vector3 u = Mathf.Abs(normal.x) < 0.9f ? Vector3.right : Vector3.up;
-        u = (u - normal * Vector3.Dot(u, normal)).normalized;
-        Vector3 w = Vector3.Cross(normal, u);
-        pts.Sort((p, q) =>
-            Mathf.Atan2(Vector3.Dot(p - c, w), Vector3.Dot(p - c, u))
-                .CompareTo(Mathf.Atan2(Vector3.Dot(q - c, w), Vector3.Dot(q - c, u))));
+        Vector3 center = Vector3.zero;
+        foreach (Vector3 p in points)
+        {
+            center += p;
+        }
+        center /= points.Count;
 
-        frontFaces.Add(pts.ToArray());
-        backFaces.Add(pts.ToArray());
-        front = new ConvexShape(frontFaces);
-        back = new ConvexShape(backFaces);
+        Vector3 axis1 = Vector3.right;
+        if (Mathf.Abs(normal.x) >= 0.9f) axis1 = Vector3.up;
+        axis1 = (axis1 - normal * Vector3.Dot(axis1, normal)).normalized;
+        Vector3 axis2 = Vector3.Cross(normal, axis1);
+
+        float[] angles = new float[points.Count];
+        for (int i = 0; i < points.Count; i++)
+        {
+            Vector3 p = points[i];
+            angles[i] = Mathf.Atan2(Vector3.Dot(p - center, axis2), Vector3.Dot(p - center, axis1));
+        }
+        for (int i = 0; i < points.Count - 1; i++)
+        {
+            for (int j = 0; j < points.Count - 1 - i; j++)
+            {
+                if (angles[j] > angles[j + 1])
+                {
+                    float tempAngle = angles[j];
+                    angles[j] = angles[j + 1];
+                    angles[j + 1] = tempAngle;
+
+                    Vector3 tempPoint = points[j];
+                    points[j] = points[j + 1];
+                    points[j + 1] = tempPoint;
+                }
+            }
+        }
+
+        frontFaces.Add(points.ToArray());
+        backFaces.Add(points.ToArray());
+        frontShape = new ConvexShape(frontFaces);
+        backShape = new ConvexShape(backFaces);
         return true;
     }
 
-    // builds a flat shaded mesh with every face pointing outward
-    public Mesh BuildMesh()
+    public Mesh MakeMesh()
     {
-        var verts = new List<Vector3>();
-        var normals = new List<Vector3>();
-        var tris = new List<int>();
-        Vector3 c = Centroid();
+        List<Vector3> vertices = new List<Vector3>();
+        List<Vector3> normals = new List<Vector3>();
+        List<int> triangles = new List<int>();
+        Vector3 center = GetCenter();
 
-        foreach (var face in Faces)
+        foreach (Vector3[] f in faces)
         {
-            Vector3[] f = face;
-            Vector3 n = Newell(f);
-            Vector3 fc = Vector3.zero;
-            foreach (var p in f) fc += p;
-            fc /= f.Length;
-            if (Vector3.Dot(n, fc - c) < 0f)
+            Vector3[] face = f;
+            Vector3 normal = GetFaceNormal(face);
+            Vector3 faceCenter = Vector3.zero;
+            foreach (Vector3 p in face)
             {
-                f = (Vector3[])f.Clone();
-                System.Array.Reverse(f);
-                n = -n;
+                faceCenter += p;
             }
-            int start = verts.Count;
-            foreach (var p in f) { verts.Add(p); normals.Add(n); }
-            for (int i = 1; i < f.Length - 1; i++)
+            faceCenter /= face.Length;
+
+            if (Vector3.Dot(normal, faceCenter - center) < 0f)
             {
-                tris.Add(start); tris.Add(start + i); tris.Add(start + i + 1);
+                Vector3[] flipped = new Vector3[face.Length];
+                for (int i = 0; i < face.Length; i++)
+                {
+                    flipped[i] = face[face.Length - 1 - i];
+                }
+                face = flipped;
+                normal = -normal;
+            }
+
+            int startIndex = vertices.Count;
+            foreach (Vector3 p in face)
+            {
+                vertices.Add(p);
+                normals.Add(normal);
+            }
+            for (int i = 1; i < face.Length - 1; i++)
+            {
+                triangles.Add(startIndex);
+                triangles.Add(startIndex + i);
+                triangles.Add(startIndex + i + 1);
             }
         }
 
-        var mesh = new Mesh { name = "CutPiece" };
-        mesh.SetVertices(verts);
+        Mesh mesh = new Mesh();
+        mesh.name = "CutPiece";
+        mesh.SetVertices(vertices);
         mesh.SetNormals(normals);
-        mesh.SetTriangles(tris, 0);
+        mesh.SetTriangles(triangles, 0);
         mesh.RecalculateBounds();
         return mesh;
     }
 
-    static Vector3 Newell(Vector3[] f)
+    static Vector3 GetFaceNormal(Vector3[] face)
     {
-        Vector3 n = Vector3.zero;
-        for (int i = 0; i < f.Length; i++)
+        Vector3 normal = Vector3.zero;
+        for (int i = 0; i < face.Length; i++)
         {
-            Vector3 a = f[i], b = f[(i + 1) % f.Length];
-            n.x += (a.y - b.y) * (a.z + b.z);
-            n.y += (a.z - b.z) * (a.x + b.x);
-            n.z += (a.x - b.x) * (a.y + b.y);
+            Vector3 a = face[i];
+            Vector3 b = face[(i + 1) % face.Length];
+            normal.x += (a.y - b.y) * (a.z + b.z);
+            normal.y += (a.z - b.z) * (a.x + b.x);
+            normal.z += (a.x - b.x) * (a.y + b.y);
         }
-        return n.sqrMagnitude > 1e-12f ? n.normalized : Vector3.up;
+        if (normal.sqrMagnitude > 1e-12f) return normal.normalized;
+        return Vector3.up;
     }
 }

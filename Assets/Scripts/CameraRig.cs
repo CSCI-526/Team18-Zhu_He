@@ -1,118 +1,175 @@
 using UnityEngine;
 
-// this goes on the Main Camera
-// 2D mode: orthographic view, Q/E rotates it in 90 degree steps
-// 3D mode: perspective orbit cam, Q/E or hold right mouse to orbit, scroll to zoom
-// Tab switches between the two
 public class CameraRig : MonoBehaviour
 {
     public Camera cam;
-    public Transform target;
+    public Transform player;
 
-    [Header("2D View")]
-    public float orthoSize = 6.5f;
+    public float size2D = 6.5f;
     public float distance2D = 40f;
 
-    [Header("3D View")]
     public float distance3D = 15f;
-    public float minDistance3D = 7f;
-    public float maxDistance3D = 28f;
-    public float pitch3D = 25f;
-    public float keyOrbitSpeed = 120f;
-    public float mouseOrbitSpeed = 0.25f;
+    public float minZoom = 7f;
+    public float maxZoom = 28f;
+    public float angle3D = 25f;
+    public float rotateSpeed = 120f;
+    public float mouseSensitivity = 0.25f;
 
-    [Header("Follow")]
-    public float followSharpness = 8f;
-    public float rotateSharpness = 10f;
-    public float heightOffset = 0.8f;
+    public float followSpeed = 8f;
+    public float turnSpeed = 10f;
+    public float offsetY = 0.8f;
 
-    public bool Is2D { get; private set; } = true;
-    public bool AllowInput { get; set; } = true;
+    public bool is2D = true;
+    public bool canControl = true;
 
-    float yaw, yawTarget, pitch;
-    Vector3 focus;
-    Vector3 lastMouse;
+    private float rotY;
+    private float targetRotY;
+    private float rotX;
+    private Vector3 lookPos;
+    private Vector3 lastMousePos;
 
-    // player can't move while the view is still turning
-    public bool IsRotating => Is2D && Mathf.Abs(Mathf.DeltaAngle(yaw, yawTarget)) > 1f;
-    // screen "right" direction, snapped to a world axis
-    public Vector3 ScreenRight => Snap(Quaternion.Euler(0f, yawTarget, 0f) * Vector3.right);
-    // depth axis, basically the direction the camera is looking that you can't see
-    public Vector3 DepthAxis => Snap(Quaternion.Euler(0f, yawTarget, 0f) * Vector3.forward);
-    public Vector3 FlatRight => Quaternion.Euler(0f, yaw, 0f) * Vector3.right;
-    public Vector3 FlatForward => Quaternion.Euler(0f, yaw, 0f) * Vector3.forward;
-
-    public string ViewName
+    public bool IsTurning()
     {
-        get
-        {
-            if (!Is2D) return "3D free camera";
-            int k = ((Mathf.RoundToInt(yawTarget / 90f) % 4) + 4) % 4;
-            return new[] { "2D front view", "2D left side view", "2D back view", "2D right side view" }[k];
-        }
+        if (!is2D) return false;
+        float diff = Mathf.Abs(Mathf.DeltaAngle(rotY, targetRotY));
+        return diff > 1f;
+    }
+
+    public Vector3 GetRightDir()
+    {
+        Vector3 dir = Quaternion.Euler(0f, targetRotY, 0f) * Vector3.right;
+        return RoundDir(dir);
+    }
+
+    public Vector3 GetDepthDir()
+    {
+        Vector3 dir = Quaternion.Euler(0f, targetRotY, 0f) * Vector3.forward;
+        return RoundDir(dir);
+    }
+
+    public Vector3 GetCamRight()
+    {
+        return Quaternion.Euler(0f, rotY, 0f) * Vector3.right;
+    }
+
+    public Vector3 GetCamForward()
+    {
+        return Quaternion.Euler(0f, rotY, 0f) * Vector3.forward;
+    }
+
+    public string GetViewName()
+    {
+        if (!is2D) return "3D free camera";
+
+        int side = ((Mathf.RoundToInt(targetRotY / 90f) % 4) + 4) % 4;
+        if (side == 0) return "2D front view";
+        if (side == 1) return "2D left side view";
+        if (side == 2) return "2D back view";
+        return "2D right side view";
     }
 
     void Start()
     {
-        if (cam == null) cam = GetComponent<Camera>();
-        pitch = pitch3D;
-        if (target != null) focus = target.position;
-        Apply();
+        if (cam == null)
+        {
+            cam = GetComponent<Camera>();
+        }
+        rotX = angle3D;
+        if (player != null)
+        {
+            lookPos = player.position;
+        }
+        MoveCamera();
     }
 
     void LateUpdate()
     {
-        float dt = Time.unscaledDeltaTime; // needs to keep going even when Cut Mode pauses time
-        if (AllowInput) HandleInput(dt);
-        yaw = Mathf.LerpAngle(yaw, yawTarget, 1f - Mathf.Exp(-rotateSharpness * dt));
-        if (Mathf.Abs(Mathf.DeltaAngle(yaw, yawTarget)) < 0.05f) yaw = yawTarget;
-        if (target != null && Time.timeScale > 0f)
-            focus = Vector3.Lerp(focus, target.position, 1f - Mathf.Exp(-followSharpness * dt));
-        Apply();
+        float deltaTime = Time.unscaledDeltaTime;
+        if (canControl)
+        {
+            CheckInput(deltaTime);
+        }
+
+        rotY = Mathf.LerpAngle(rotY, targetRotY, 1f - Mathf.Exp(-turnSpeed * deltaTime));
+        if (Mathf.Abs(Mathf.DeltaAngle(rotY, targetRotY)) < 0.05f)
+        {
+            rotY = targetRotY;
+        }
+
+        if (player != null && Time.timeScale > 0f)
+        {
+            lookPos = Vector3.Lerp(lookPos, player.position, 1f - Mathf.Exp(-followSpeed * deltaTime));
+        }
+        MoveCamera();
     }
 
-    void HandleInput(float dt)
+    void CheckInput(float deltaTime)
     {
-        if (Input.GetKeyDown(KeyCode.Tab)) ToggleView();
-
-        if (Is2D)
+        if (Input.GetKeyDown(KeyCode.Tab))
         {
-            if (Input.GetKeyDown(KeyCode.Q)) yawTarget -= 90f;
-            if (Input.GetKeyDown(KeyCode.E)) yawTarget += 90f;
+            SwitchView();
+        }
+
+        if (is2D)
+        {
+            if (Input.GetKeyDown(KeyCode.Q)) targetRotY -= 90f;
+            if (Input.GetKeyDown(KeyCode.E)) targetRotY += 90f;
         }
         else
         {
-            float turn = (Input.GetKey(KeyCode.E) ? 1f : 0f) - (Input.GetKey(KeyCode.Q) ? 1f : 0f);
-            if (turn != 0f) { yawTarget += turn * keyOrbitSpeed * dt; yaw = yawTarget; }
+            float turn = 0f;
+            if (Input.GetKey(KeyCode.E)) turn = turn + 1f;
+            if (Input.GetKey(KeyCode.Q)) turn = turn - 1f;
+            if (turn != 0f)
+            {
+                targetRotY += turn * rotateSpeed * deltaTime;
+                rotY = targetRotY;
+            }
 
-            if (Input.GetMouseButtonDown(1)) lastMouse = Input.mousePosition;
+            if (Input.GetMouseButtonDown(1))
+            {
+                lastMousePos = Input.mousePosition;
+            }
             if (Input.GetMouseButton(1))
             {
-                Vector3 delta = Input.mousePosition - lastMouse;
-                yawTarget += delta.x * mouseOrbitSpeed;
-                yaw = yawTarget;
-                pitch = Mathf.Clamp(pitch - delta.y * mouseOrbitSpeed, 5f, 75f);
-                lastMouse = Input.mousePosition;
+                Vector3 mouseMove = Input.mousePosition - lastMousePos;
+                targetRotY += mouseMove.x * mouseSensitivity;
+                rotY = targetRotY;
+                rotX = Mathf.Clamp(rotX - mouseMove.y * mouseSensitivity, 5f, 75f);
+                lastMousePos = Input.mousePosition;
             }
-            distance3D = Mathf.Clamp(distance3D - Input.mouseScrollDelta.y, minDistance3D, maxDistance3D);
+
+            distance3D = Mathf.Clamp(distance3D - Input.mouseScrollDelta.y, minZoom, maxZoom);
         }
     }
 
-    public void ToggleView()
+    public void SwitchView()
     {
-        Is2D = !Is2D;
-        if (Is2D) yawTarget = Mathf.Round(yaw / 90f) * 90f; // snap to closest side
+        is2D = !is2D;
+        if (is2D)
+        {
+            targetRotY = Mathf.Round(rotY / 90f) * 90f;
+        }
     }
 
-    void Apply()
+    void MoveCamera()
     {
-        Vector3 f = focus + Vector3.up * heightOffset;
-        Quaternion rot = Quaternion.Euler(Is2D ? 0f : pitch, yaw, 0f);
-        float dist = Is2D ? distance2D : distance3D;
-        cam.orthographic = Is2D;
-        cam.orthographicSize = orthoSize;
-        cam.transform.SetPositionAndRotation(f - rot * Vector3.forward * dist, rot);
+        Vector3 center = lookPos + Vector3.up * offsetY;
+
+        float camAngle = rotX;
+        if (is2D) camAngle = 0f;
+        Quaternion camRot = Quaternion.Euler(camAngle, rotY, 0f);
+
+        float distance = distance3D;
+        if (is2D) distance = distance2D;
+
+        cam.orthographic = is2D;
+        cam.orthographicSize = size2D;
+        cam.transform.SetPositionAndRotation(center - camRot * Vector3.forward * distance, camRot);
     }
 
-    static Vector3 Snap(Vector3 v) => new Vector3(Mathf.Round(v.x), 0f, Mathf.Round(v.z));
+    static Vector3 RoundDir(Vector3 dir)
+    {
+        return new Vector3(Mathf.Round(dir.x), 0f, Mathf.Round(dir.z));
+    }
 }
