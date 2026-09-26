@@ -317,9 +317,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LevelManager
   levelName: Cut to fit
-  hint: From the front the wall looks solid. Press Tab (or Q / E) to find the
-    thin slot, cut your depth down from the side view, line up with the slot, then
-    walk through.
+  hint: 
+  bigTip: "Press Tab to switch between 2D and 3D view\nIn 3D: hold right mouse + drag to look around"
   maxCuts: 2
   deathY: -12
   player: {fileID: 579504286}

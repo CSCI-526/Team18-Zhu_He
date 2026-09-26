@@ -262,7 +262,7 @@ public class CutController : MonoBehaviour
         }
 
         levelManager.UseCut();
-        EndCut(null);
+        EndCut("Nice cut!");
     }
 
     void CancelCut()

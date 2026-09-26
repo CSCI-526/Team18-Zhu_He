@@ -441,8 +441,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LevelManager
   levelName: Cut to fit
-  hint: The tunnel is too low for a full cube. Press C, drag a horizontal line
-    through the middle of the cube, then keep either half.
+  hint: 
+  bigTip: "Press C to cut the cube\nWASD to move    Space to jump\nGoal: reach the green see-through block"
   maxCuts: 2
   deathY: -12
   player: {fileID: 579504286}

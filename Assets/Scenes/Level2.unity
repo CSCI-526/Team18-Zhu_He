@@ -423,9 +423,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LevelManager
   levelName: Cut to fit
-  hint: The red door only opens while something rests on the yellow plate. Stand
-    on the plate, cut yourself in two with a vertical line, and keep the right-hand
-    piece.
+  hint: 
+  bigTip: "Leave a piece on the yellow plate to open the red door"
   maxCuts: 2
   deathY: -12
   player: {fileID: 579504286}

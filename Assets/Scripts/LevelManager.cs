@@ -5,6 +5,8 @@ public class LevelManager : MonoBehaviour
 {
     public string levelName = "Cut to fit";
     public string hint = "";
+    [TextArea]
+    public string bigTip = "";
 
     public int maxCuts = 2;
     public float deathY = -12f;
@@ -13,6 +15,7 @@ public class LevelManager : MonoBehaviour
     public HUD hud;
 
     public int cutsLeft;
+    public float lastCutTime;
 
     private bool isLoading;
 
@@ -44,6 +47,7 @@ public class LevelManager : MonoBehaviour
     {
         cutsLeft = cutsLeft - 1;
         if (cutsLeft < 0) cutsLeft = 0;
+        lastCutTime = Time.time;
     }
 
     public void RestartLevel()

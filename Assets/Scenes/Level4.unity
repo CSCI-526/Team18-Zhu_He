@@ -580,8 +580,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LevelManager
   levelName: Cut to fit
-  hint: This plate needs a heavy piece (mass 3 or more), and the tunnel needs
-    a short one. Think about which cut to make first.
+  hint: 
   maxCuts: 2
   deathY: -12
   player: {fileID: 579504286}
