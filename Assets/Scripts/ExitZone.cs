@@ -4,10 +4,9 @@ using UnityEngine;
 public class ExitZone : MonoBehaviour
 {
     public LevelManager levelManager;
-    public string labelText = "EXIT";
-    public float labelSize = 14f;
+    public TMP_Text exitText;
+    public float labelHeight = 1.2f;
 
-    private GameObject label;
     private Vector3 labelPos;
 
     void Reset()
@@ -18,30 +17,23 @@ public class ExitZone : MonoBehaviour
     void Start()
     {
         Bounds bounds = GetComponent<Collider>().bounds;
-        labelPos = new Vector3(bounds.center.x, bounds.max.y + 1.2f, bounds.center.z);
-
-        label = new GameObject("Exit Label");
-        label.transform.position = labelPos;
-
-        TextMeshPro text = label.AddComponent<TextMeshPro>();
-        text.text = labelText;
-        text.fontSize = labelSize;
-        text.fontStyle = FontStyles.Bold;
-        text.alignment = TextAlignmentOptions.Center;
-        text.color = new Color(0.1f, 0.6f, 0.4f, 1f);
-        text.outlineWidth = 0.2f;
-        text.outlineColor = Color.white;
-        text.rectTransform.sizeDelta = new Vector2(8f, 3f);
+        labelPos = new Vector3(bounds.center.x, bounds.max.y + labelHeight, bounds.center.z);
     }
 
     void LateUpdate()
     {
-        if (label == null) return;
+        if (exitText == null || Camera.main == null) return;
 
-        label.transform.position = labelPos + Vector3.up * Mathf.Sin(Time.unscaledTime * 3f) * 0.2f;
-        if (Camera.main != null)
+        Vector3 worldPos = labelPos + Vector3.up * Mathf.Sin(Time.unscaledTime * 3f) * 0.2f;
+        Vector3 screenPos = Camera.main.WorldToScreenPoint(worldPos);
+        if (screenPos.z < 0f)
         {
-            label.transform.rotation = Camera.main.transform.rotation;
+            exitText.enabled = false;
+        }
+        else
+        {
+            exitText.enabled = true;
+            exitText.rectTransform.position = screenPos;
         }
     }
 

@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 
 public class CutController : MonoBehaviour
@@ -16,6 +17,14 @@ public class CutController : MonoBehaviour
     public bool canRotateLeftover = false;
     public bool canPushLeftover = false;
     public float lineWidth = 4f;
+
+    public TMP_Text noCutsMsg;
+    public TMP_Text cutModeMsg;
+    public TMP_Text cancelMsg;
+    public TMP_Text missMsg;
+    public TMP_Text tooSmallMsg;
+    public TMP_Text chooseMsg;
+    public TMP_Text niceCutMsg;
 
     public enum State { Normal, Drawing, Choosing }
     public State state = State.Normal;
@@ -51,7 +60,7 @@ public class CutController : MonoBehaviour
             case State.Drawing:
                 if (Input.GetKeyDown(KeyCode.C) || Input.GetKeyDown(KeyCode.Escape))
                 {
-                    EndCut("Cut cancelled");
+                    EndCut(cancelMsg.text);
                     break;
                 }
                 DrawLine();
@@ -82,14 +91,14 @@ public class CutController : MonoBehaviour
     {
         if (!levelManager.CanCut())
         {
-            levelManager.ShowMessage("No cuts left. Press R to restart the level.");
+            levelManager.ShowMessage(noCutsMsg.text);
             return;
         }
         state = State.Drawing;
         playerScript.StopPlayer();
         playerScript.canMove = false;
         Time.timeScale = 0f;
-        levelManager.ShowMessage("Cut Mode: drag a line across your body");
+        levelManager.ShowMessage(cutModeMsg.text);
     }
 
     void EndCut(string msg)
@@ -183,13 +192,13 @@ public class CutController : MonoBehaviour
         ConvexShape back;
         if (!player.GetWorldShape().Cut(normal, planeDist, out front, out back))
         {
-            levelManager.ShowMessage("That line misses your body. Draw it across the blue shape.");
+            levelManager.ShowMessage(missMsg.text);
             lineRenderer.enabled = false;
             return;
         }
         if (front.GetVolume() < minSize || back.GetVolume() < minSize)
         {
-            levelManager.ShowMessage("One piece would be too small. Try a different line.");
+            levelManager.ShowMessage(tooSmallMsg.text);
             lineRenderer.enabled = false;
             return;
         }
@@ -222,7 +231,7 @@ public class CutController : MonoBehaviour
         lineRenderer.enabled = false;
         camScript.canControl = false;
         state = State.Choosing;
-        levelManager.ShowMessage("Click the piece to keep, or press 1 (blue) / 2 (orange). Esc cancels.");
+        levelManager.ShowMessage(chooseMsg.text);
     }
 
     void ClickPiece()
@@ -262,7 +271,7 @@ public class CutController : MonoBehaviour
         }
 
         levelManager.UseCut();
-        EndCut("Nice cut!");
+        EndCut(niceCutMsg.text);
     }
 
     void CancelCut()
@@ -278,7 +287,7 @@ public class CutController : MonoBehaviour
         }
         playerRend.enabled = true;
         playerCol.enabled = true;
-        EndCut("Cut cancelled");
+        EndCut(cancelMsg.text);
     }
 
     void MakeLeftover(ConvexShape leftShape)

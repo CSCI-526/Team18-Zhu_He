@@ -1,13 +1,26 @@
 using TMPro;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class HUD : MonoBehaviour
 {
-    public TMP_Text levelText;
     public TMP_Text statsText;
     public TMP_Text modeText;
     public TMP_Text messageText;
+
+    public TMP_Text title2D;
+    public TMP_Text title3D;
+    public TMP_Text titleCut;
+    public TMP_Text titleChoose;
+    public TMP_Text viewFront;
+    public TMP_Text viewLeft;
+    public TMP_Text viewBack;
+    public TMP_Text viewRight;
+    public TMP_Text viewFree;
+    public TMP_Text chooseKeys;
+
+    public GameObject restartTip;
+    public float restartTipDelay = 20f;
+    private bool showedRestartTip;
 
     public LevelManager levelManager;
     public CuttablePiece player;
@@ -15,99 +28,48 @@ public class HUD : MonoBehaviour
     public CutController cutScript;
 
     public float messageTime = 2.5f;
-    public float messageSize = 40f;
     private float timer;
 
-    public float tipSize = 56f;
-    public float tipY = -170f;
-    private TextMeshProUGUI bigTipText;
-
-    public float restartTipDelay = 20f;
-    private bool showedRestartTip;
+    private string statsFormat;
 
     void Awake()
     {
         if (messageText != null)
         {
             messageText.text = "";
-            messageText.fontSize = messageSize;
-            messageText.fontStyle = FontStyles.Bold;
-            messageText.alignment = TextAlignmentOptions.Bottom;
-            messageText.outlineWidth = 0.25f;
-            messageText.outlineColor = Color.white;
-
-            RectTransform rect = messageText.rectTransform;
-            rect.anchorMin = new Vector2(0.5f, 0f);
-            rect.anchorMax = new Vector2(0.5f, 0f);
-            rect.pivot = new Vector2(0.5f, 0f);
-            rect.anchoredPosition = new Vector2(0f, 60f);
-            rect.sizeDelta = new Vector2(1600f, 150f);
         }
-    }
-
-    void Start()
-    {
-        int levelNum = SceneManager.GetActiveScene().buildIndex + 1;
-        levelText.text = "Level " + levelNum + ": " + levelManager.levelName;
-        if (levelManager.hint != "")
+        if (restartTip != null)
         {
-            levelText.text += "\n<size=70%>" + levelManager.hint + "</size>";
+            restartTip.SetActive(false);
         }
-
-        if (levelManager.bigTip != "")
-        {
-            MakeBigTip(levelManager.bigTip);
-        }
-    }
-
-    void MakeBigTip(string tip)
-    {
-        GameObject tipObj = new GameObject("BigTip", typeof(RectTransform));
-        tipObj.transform.SetParent(transform, false);
-
-        bigTipText = tipObj.AddComponent<TextMeshProUGUI>();
-        bigTipText.font = levelText.font;
-        bigTipText.text = tip;
-        bigTipText.fontSize = tipSize;
-        bigTipText.fontStyle = FontStyles.Bold;
-        bigTipText.alignment = TextAlignmentOptions.Top;
-        bigTipText.color = levelText.color;
-        bigTipText.outlineWidth = 0.25f;
-        bigTipText.outlineColor = Color.white;
-        bigTipText.raycastTarget = false;
-
-        RectTransform rect = tipObj.GetComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0.5f, 1f);
-        rect.anchorMax = new Vector2(0.5f, 1f);
-        rect.pivot = new Vector2(0.5f, 1f);
-        rect.anchoredPosition = new Vector2(0f, tipY);
-        rect.sizeDelta = new Vector2(1500f, 300f);
+        statsFormat = statsText.text;
     }
 
     void Update()
     {
         Vector3 size = player.GetSize();
-        statsText.text = "Cuts left: " + levelManager.cutsLeft + " / " + levelManager.maxCuts +
-                         "    Size: " + size.x.ToString("0.0") + " x " + size.y.ToString("0.0") + " x " + size.z.ToString("0.0") +
-                         "    Mass: " + player.volume.ToString("0.0");
+        statsText.text = string.Format(statsFormat,
+            levelManager.cutsLeft, levelManager.maxCuts,
+            size.x.ToString("0.0"), size.y.ToString("0.0"), size.z.ToString("0.0"),
+            player.volume.ToString("0.0"));
 
         if (cutScript.state == CutController.State.Drawing)
         {
-            modeText.text = "Cut Mode\n<size=70%>" + camScript.GetViewName() + "</size>";
+            SetMode(titleCut.text, GetViewName());
         }
         else if (cutScript.state == CutController.State.Choosing)
         {
-            modeText.text = "Choose a piece\n<size=70%>1 = blue, 2 = orange</size>";
+            SetMode(titleChoose.text, chooseKeys.text);
         }
         else
         {
             if (camScript.is2D)
             {
-                modeText.text = "2D\n<size=70%>" + camScript.GetViewName() + "</size>";
+                SetMode(title2D.text, GetViewName());
             }
             else
             {
-                modeText.text = "3D\n<size=70%>Free camera</size>";
+                SetMode(title3D.text, GetViewName());
             }
         }
 
@@ -125,14 +87,28 @@ public class HUD : MonoBehaviour
             if (Time.time - levelManager.lastCutTime > restartTipDelay)
             {
                 showedRestartTip = true;
-                if (bigTipText == null)
+                if (restartTip != null)
                 {
-                    MakeBigTip("");
+                    restartTip.SetActive(true);
                 }
-                bigTipText.text = "Stuck? Press R to restart";
-                bigTipText.color = new Color(0.8f, 0.2f, 0.2f, 1f);
             }
         }
+    }
+
+    void SetMode(string title, string small)
+    {
+        modeText.text = title + "\n<size=70%>" + small + "</size>";
+    }
+
+    string GetViewName()
+    {
+        if (!camScript.is2D) return viewFree.text;
+
+        int side = camScript.GetViewSide();
+        if (side == 0) return viewFront.text;
+        if (side == 1) return viewLeft.text;
+        if (side == 2) return viewBack.text;
+        return viewRight.text;
     }
 
     public void ShowMessage(string msg)

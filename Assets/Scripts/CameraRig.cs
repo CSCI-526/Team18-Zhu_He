@@ -57,15 +57,10 @@ public class CameraRig : MonoBehaviour
         return Quaternion.Euler(0f, rotY, 0f) * Vector3.forward;
     }
 
-    public string GetViewName()
+    public int GetViewSide()
     {
-        if (!is2D) return "3D free camera";
-
         int side = ((Mathf.RoundToInt(targetRotY / 90f) % 4) + 4) % 4;
-        if (side == 0) return "2D front view";
-        if (side == 1) return "2D left side view";
-        if (side == 2) return "2D back view";
-        return "2D right side view";
+        return side;
     }
 
     void Start()

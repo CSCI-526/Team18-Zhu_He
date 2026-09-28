@@ -3,11 +3,6 @@ using UnityEngine.SceneManagement;
 
 public class LevelManager : MonoBehaviour
 {
-    public string levelName = "Cut to fit";
-    public string hint = "";
-    [TextArea]
-    public string bigTip = "";
-
     public int maxCuts = 2;
     public float deathY = -12f;
 
